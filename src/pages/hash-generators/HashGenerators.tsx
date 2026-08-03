@@ -151,7 +151,8 @@ const HashGenerators: React.FC = () => {
     if (realTimeEnabled && inputMode === 'text') {
       processTextInput(inputText)
     }
-  }, [inputText, selectedHashes, realTimeEnabled, inputMode, processTextInput])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputText, selectedHashes, realTimeEnabled, inputMode])
 
   // Handle copy feedback timeout with cleanup
   useEffect(() => {
