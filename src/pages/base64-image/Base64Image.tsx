@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useClipboard, useFileUpload, formatFileSize } from '../../utils'
 import './base64-image.css'
 
 type ConversionMode = 'encode' | 'decode'
@@ -14,33 +15,20 @@ const Base64Image: React.FC = () => {
   const [mode, setMode] = useState<ConversionMode>('encode')
   const [base64Text, setBase64Text] = useState('')
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null)
-  const [copyFeedback, setCopyFeedback] = useState('')
-  const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Supported image formats
   const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml']
 
-  // Handle file selection
+  // Handle file selection logic
   const handleFileSelect = useCallback((file: File) => {
     setError('')
-    
-    if (!supportedFormats.includes(file.type)) {
-      setError(`Unsupported file format: ${file.type}. Supported formats: JPEG, PNG, GIF, WebP, BMP, SVG`)
-      return
-    }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      setError('File size too large. Maximum size is 10MB.')
-      return
-    }
 
     const reader = new FileReader()
     reader.onload = (e) => {
       const result = e.target?.result as string
       setBase64Text(result)
-      
+
       // Get image dimensions
       const img = new Image()
       img.onload = () => {
@@ -57,36 +45,20 @@ const Base64Image: React.FC = () => {
       setError('Failed to read file')
     }
     reader.readAsDataURL(file)
-  }, [supportedFormats])
-
-  // Handle drag and drop
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
   }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
+  // Use clipboard utility
+  const { copy, feedback: copyFeedback } = useClipboard({
+    successMessage: 'Copied to clipboard!'
+  })
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
-
-  // Handle file input change
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
+  // Use file upload utility
+  const fileUpload = useFileUpload({
+    acceptedTypes: supportedFormats,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    onFileSelect: handleFileSelect,
+    onError: (err) => setError(err)
+  })
 
   // Handle Base64 text input for decode mode
   const handleBase64Input = useCallback((text: string) => {
@@ -133,16 +105,8 @@ const Base64Image: React.FC = () => {
   // Copy Base64 to clipboard
   const copyBase64 = useCallback(async () => {
     if (!base64Text.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(base64Text)
-      setCopyFeedback('Base64 data copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [base64Text])
+    await copy(base64Text, 'Base64 data copied to clipboard!')
+  }, [base64Text, copy])
 
   // Download image from Base64
   const downloadImage = useCallback(() => {
@@ -161,20 +125,8 @@ const Base64Image: React.FC = () => {
     setBase64Text('')
     setImageInfo(null)
     setError('')
-    setCopyFeedback('')
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
-
-  // Format file size
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }, [])
+    fileUpload.clearFiles()
+  }, [fileUpload])
 
   return (
     <div className="base64-image">
@@ -226,12 +178,10 @@ const Base64Image: React.FC = () => {
 
       {mode === 'encode' ? (
         <div className="base64-section upload-section">
-          <div 
-            className={`upload-area ${dragOver ? 'drag-over' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+          <div
+            className={`upload-area ${fileUpload.isDragOver ? 'drag-over' : ''}`}
+            {...fileUpload.dragDropProps}
+            onClick={fileUpload.openFilePicker}
           >
             <div className="upload-content">
               <span className="upload-icon">📁</span>
@@ -246,10 +196,7 @@ const Base64Image: React.FC = () => {
               </p>
             </div>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileInputChange}
+              {...fileUpload.inputProps}
               style={{ display: 'none' }}
             />
           </div>
