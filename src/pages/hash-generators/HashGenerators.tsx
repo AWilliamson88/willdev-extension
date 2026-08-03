@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import SparkMD5 from 'spark-md5'
 import './hash-generators.css'
 
 type HashType = 'md5' | 'sha1' | 'sha256' | 'sha512'
@@ -38,143 +39,18 @@ const HashGenerators: React.FC = () => {
     sha512: { name: 'SHA-512', algorithm: 'SHA-512', color: '#8e44ad' }
   }
 
-  // MD5 implementation (since Web Crypto API doesn't support MD5)
-  const md5 = useCallback((input: string): string => {
-    // Simplified MD5 implementation for demonstration
-    // Note: This is a basic implementation for demo purposes
-    function rotateLeft(value: number, amount: number): number {
-      return (value << amount) | (value >>> (32 - amount))
-    }
-
-    function addUnsigned(x: number, y: number): number {
-      const x4 = (x & 0x40000000)
-      const y4 = (y & 0x40000000)
-      const x8 = (x & 0x80000000)
-      const y8 = (y & 0x80000000)
-      const result = (x & 0x3FFFFFFF) + (y & 0x3FFFFFFF)
-
-      if (x4 & y4) {
-        return (result ^ 0x80000000 ^ x8 ^ y8)
-      }
-      if (x4 | y4) {
-        if (result & 0x40000000) {
-          return (result ^ 0xC0000000 ^ x8 ^ y8)
-        } else {
-          return (result ^ 0x40000000 ^ x8 ^ y8)
-        }
-      } else {
-        return (result ^ x8 ^ y8)
-      }
-    }
-
-    function f(x: number, y: number, z: number): number {
-      return (x & y) | ((~x) & z)
-    }
-
-    function g(x: number, y: number, z: number): number {
-      return (x & z) | (y & (~z))
-    }
-
-    function h(x: number, y: number, z: number): number {
-      return (x ^ y ^ z)
-    }
-
-    function i(x: number, y: number, z: number): number {
-      return (y ^ (x | (~z)))
-    }
-
-    // Convert string to array of little-endian words
-    const msg = input
-    const msgLength = msg.length
-    const wordArray: number[] = []
-
-    for (let i = 0; i < msgLength - 3; i += 4) {
-      const j = msg.charCodeAt(i) | (msg.charCodeAt(i + 1) << 8) |
-                (msg.charCodeAt(i + 2) << 16) | (msg.charCodeAt(i + 3) << 24)
-      wordArray.push(j)
-    }
-
-    // Handle remaining bytes
-    let remaining = msgLength % 4
-    let lastWord = 0
-    for (let i = 0; i < remaining; i++) {
-      lastWord |= msg.charCodeAt(msgLength - remaining + i) << (i * 8)
-    }
-    if (remaining > 0) wordArray.push(lastWord)
-
-    // Add padding
-    wordArray.push(0x80)
-    while ((wordArray.length % 16) !== 14) {
-      wordArray.push(0)
-    }
-
-    // Add length
-    wordArray.push(msgLength * 8)
-    wordArray.push(0)
-
-    // Initialize MD5 buffer
-    let h0 = 0x67452301
-    let h1 = 0xEFCDAB89
-    let h2 = 0x98BADCFE
-    let h3 = 0x10325476
-
-    // Process message in 512-bit chunks
-    for (let i = 0; i < wordArray.length; i += 16) {
-      const chunk = wordArray.slice(i, i + 16)
-      let a = h0, b = h1, c = h2, d = h3
-
-      // Main loop (simplified)
-      for (let j = 0; j < 64; j++) {
-        let fResult: number, g: number
-
-        if (j < 16) {
-          fResult = f(b, c, d)
-          g = j
-        } else if (j < 32) {
-          fResult = g(b, c, d)
-          g = (5 * j + 1) % 16
-        } else if (j < 48) {
-          fResult = h(b, c, d)
-          g = (3 * j + 5) % 16
-        } else {
-          fResult = i(b, c, d)
-          g = (7 * j) % 16
-        }
-
-        const temp = d
-        d = c
-        c = b
-        b = addUnsigned(b, rotateLeft(addUnsigned(addUnsigned(a, fResult), addUnsigned(chunk[g] || 0, [
-          0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE, 0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
-          0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE, 0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821
-        ][j % 16])), [7, 12, 17, 22][j % 4]))
-        a = temp
-      }
-
-      h0 = addUnsigned(h0, a)
-      h1 = addUnsigned(h1, b)
-      h2 = addUnsigned(h2, c)
-      h3 = addUnsigned(h3, d)
-    }
-
-    // Convert to hex string
-    function toHex(n: number): string {
-      let result = ''
-      for (let i = 0; i < 4; i++) {
-        result += ((n >>> (i * 8)) & 0xFF).toString(16).padStart(2, '0')
-      }
-      return result
-    }
-
-    return toHex(h0) + toHex(h1) + toHex(h2) + toHex(h3)
+  // MD5 hash generation using spark-md5 (battle-tested library)
+  const generateMD5 = useCallback((data: ArrayBuffer): string => {
+    const spark = new SparkMD5.ArrayBuffer()
+    spark.append(data)
+    return spark.end()
   }, [])
 
-  // Generate hash using Web Crypto API
+  // Generate hash using Web Crypto API or spark-md5 for MD5
   const generateHash = useCallback(async (data: ArrayBuffer, algorithm: string): Promise<string> => {
     if (algorithm === 'MD5') {
-      // Use our simple MD5 implementation for demo
-      const text = new TextDecoder().decode(data)
-      return md5(text)
+      // Use spark-md5 library (Web Crypto API doesn't support MD5)
+      return generateMD5(data)
     }
 
     try {
@@ -184,7 +60,7 @@ const HashGenerators: React.FC = () => {
     } catch (error) {
       throw new Error(`Failed to generate ${algorithm} hash: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-  }, [md5])
+  }, [generateMD5])
 
   // Process text input
   const processTextInput = useCallback(async (text: string): Promise<void> => {
