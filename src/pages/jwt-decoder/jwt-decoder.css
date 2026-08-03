@@ -1,0 +1,175 @@
+/* JWT Decoder Page Styles */
+.jwt-decoder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  height: 100%;
+  max-width: 100%;
+}
+
+/* Header */
+.jwt-decoder h2 {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.jwt-decoder h2::before {
+  content: '🔐';
+  font-size: 1.5rem;
+}
+
+/* Input Section */
+.jwt-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.jwt-input-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.jwt-input-label::before {
+  content: '📋';
+  font-size: 1rem;
+}
+
+.jwt-decoder textarea {
+  width: 100%;
+  min-height: 120px;
+  max-height: 200px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.jwt-decoder textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+.jwt-decoder textarea::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Output Section */
+.jwt-output-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-height: 0;
+}
+
+.jwt-output-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.jwt-output-label::before {
+  content: '📄';
+  font-size: 1rem;
+}
+
+.jwt-decoder pre {
+  flex: 1;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  overflow: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 200px;
+}
+
+/* Error State */
+.jwt-decoder pre.error {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.jwt-decoder pre.error::before {
+  content: '❌ ';
+  font-size: 1rem;
+}
+
+/* Empty State */
+.jwt-decoder pre:empty::before {
+  content: 'Paste a JWT token above to see the decoded payload...';
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Success State */
+.jwt-decoder pre:not(.error):not(:empty) {
+  border-color: var(--accent-primary);
+  background: rgba(52, 152, 219, 0.05);
+}
+
+/* Utility Classes */
+.jwt-section {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .jwt-decoder {
+    gap: var(--spacing-md);
+  }
+
+  .jwt-decoder h2 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .jwt-decoder textarea {
+    min-height: 100px;
+    font-size: 0.85rem;
+  }
+
+  .jwt-decoder pre {
+    font-size: 0.8rem;
+    padding: var(--spacing-md);
+    min-height: 150px;
+  }
+
+  .jwt-section {
+    padding: var(--spacing-md);
+  }
+}
