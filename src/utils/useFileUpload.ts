@@ -59,7 +59,7 @@ export interface UseFileUploadReturn {
   /**
    * File input ref to attach to <input type="file">
    */
-  fileInputRef: React.RefObject<HTMLInputElement>
+  fileInputRef: React.RefObject<HTMLInputElement | null>
   
   /**
    * Props to spread on drag-drop container
@@ -75,7 +75,7 @@ export interface UseFileUploadReturn {
    * Props to spread on file input
    */
   inputProps: {
-    ref: React.RefObject<HTMLInputElement>
+    ref: React.RefObject<HTMLInputElement | null>
     type: 'file'
     onChange: (e: ChangeEvent<HTMLInputElement>) => void
     accept?: string
