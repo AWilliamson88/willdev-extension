@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import React, { useState, useCallback } from 'react'
+import { useClipboard, useFileUpload, formatFileSize } from '../../utils'
 import './file-utilities.css'
 
 type UtilityMode = 'hash' | 'split' | 'metadata' | 'analyze'
@@ -59,10 +60,10 @@ interface SplitChunk {
 const FileUtilities: React.FC = () => {
   const [mode, setMode] = useState<UtilityMode>('hash')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [processing, setProcessing] = useState(false)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Hash results
   const [hashResults, setHashResults] = useState<HashResult[]>([])
@@ -76,8 +77,6 @@ const FileUtilities: React.FC = () => {
   // File metadata and analysis
   const [fileMetadata, setFileMetadata] = useState<FileMetadata | null>(null)
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Available hash algorithms
   const hashAlgorithms = ['MD5', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512']
@@ -295,16 +294,8 @@ const FileUtilities: React.FC = () => {
     setSplitChunks([])
     setFileMetadata(null)
     setFileAnalysis(null)
-    
-    const sizeLimit = getFileSizeLimit(mode)
-    if (file.size > sizeLimit) {
-      const limitMB = Math.round(sizeLimit / (1024 * 1024))
-      setError(`File size too large. Maximum size for ${mode} mode is ${limitMB}MB.`)
-      return
-    }
-
     setSelectedFile(file)
-    
+
     // Process file based on current mode
     switch (mode) {
       case 'hash':
@@ -320,54 +311,19 @@ const FileUtilities: React.FC = () => {
         processFileAnalysis(file)
         break
     }
-  }, [mode, getFileSizeLimit, processFileHashing, processFileSplitting, processFileMetadata, processFileAnalysis])
+  }, [mode, processFileHashing, processFileSplitting, processFileMetadata, processFileAnalysis])
 
-  // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
-
-  // File input change handler
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
-
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
+  // File upload with drag-and-drop support and dynamic size limit based on mode
+  const fileUpload = useFileUpload({
+    maxSize: getFileSizeLimit(mode),
+    onFileSelect: handleFileSelect,
+    onError: (err) => setError(err)
+  })
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Download file chunk
   const downloadChunk = useCallback((chunk: SplitChunk) => {
@@ -388,15 +344,6 @@ const FileUtilities: React.FC = () => {
     })
   }, [splitChunks, downloadChunk])
 
-  // Format file size
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }, [])
-
   // Clear all data
   const clearAll = useCallback(() => {
     setSelectedFile(null)
@@ -405,11 +352,8 @@ const FileUtilities: React.FC = () => {
     setFileMetadata(null)
     setFileAnalysis(null)
     setError('')
-    setCopyFeedback('')
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
+    fileUpload.clearFiles()
+  }, [fileUpload])
 
   // Get mode description
   const getModeDescription = useCallback((currentMode: UtilityMode): string => {
@@ -540,11 +484,9 @@ const FileUtilities: React.FC = () => {
 
       <div className="utilities-section upload-section">
         <div
-          className={`upload-area ${dragOver ? 'drag-over' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          className={`upload-area ${fileUpload.isDragOver ? 'drag-over' : ''}`}
+          {...fileUpload.dragDropProps}
+          onClick={fileUpload.openFilePicker}
         >
           <div className="upload-content">
             <span className="upload-icon">📁</span>
@@ -556,9 +498,7 @@ const FileUtilities: React.FC = () => {
             </p>
           </div>
           <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileInputChange}
+            {...fileUpload.inputProps}
             style={{ display: 'none' }}
           />
         </div>

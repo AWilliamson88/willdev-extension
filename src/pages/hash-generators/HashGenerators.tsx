@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import SparkMD5 from 'spark-md5'
+import { useClipboard, useFileUpload, formatFileSize } from '../../utils'
 import './hash-generators.css'
 
 type HashType = 'md5' | 'sha1' | 'sha256' | 'sha512'
@@ -23,13 +24,12 @@ const HashGenerators: React.FC = () => {
   const [selectedHashes, setSelectedHashes] = useState<HashType[]>(['md5', 'sha1', 'sha256', 'sha512'])
   const [hashResults, setHashResults] = useState<HashResult[]>([])
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null)
-  const [dragOver, setDragOver] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const isMountedRef = useRef(true)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Hash type configurations
   const hashConfigs = {
@@ -154,14 +154,6 @@ const HashGenerators: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputText, selectedHashes, realTimeEnabled, inputMode])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -185,57 +177,20 @@ const HashGenerators: React.FC = () => {
     )
   }, [])
 
-  // Handle file selection
-  const handleFileSelect = useCallback((file: File) => {
-    setError('')
-    
-    // 100MB limit for hash generation
-    if (file.size > 100 * 1024 * 1024) {
-      setError('File size too large. Maximum size is 100MB.')
-      return
-    }
-
-    processFileInput(file)
-  }, [processFileInput])
-
-  // Handle drag and drop
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
-
-  // Handle file input change
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
+  // Handle file selection (100MB limit for hash generation)
+  const fileUpload = useFileUpload({
+    maxSize: 100 * 1024 * 1024,
+    onFileSelect: (file) => {
+      setError('')
+      processFileInput(file)
+    },
+    onError: (err) => setError(err)
+  })
 
   // Copy hash to clipboard
   const copyHash = useCallback(async (hash: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(hash)
-      setCopyFeedback(`${type} hash copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(hash, `${type} hash copied to clipboard!`)
+  }, [copy])
 
   // Copy all hashes
   const copyAllHashes = useCallback(async () => {
@@ -245,25 +200,17 @@ const HashGenerators: React.FC = () => {
       `${hashConfigs[result.type].name}: ${result.value}`
     ).join('\n')
 
-    try {
-      await navigator.clipboard.writeText(allHashes)
-      setCopyFeedback('All hashes copied to clipboard!')
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [hashResults, hashConfigs])
+    await copy(allHashes, 'All hashes copied to clipboard!')
+  }, [hashResults, hashConfigs, copy])
 
   // Clear all
   const clearAll = useCallback(() => {
     setInputText('')
     setHashResults([])
     setError('')
-    setCopyFeedback('')
     setFileInfo(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
+    fileUpload.clearFiles()
+  }, [fileUpload])
 
   // Load sample text
   const loadSample = useCallback(() => {
@@ -384,12 +331,10 @@ Unicode characters: 🔒🔑💻🌟✨`
         </div>
       ) : (
         <div className="hash-section upload-section">
-          <div 
-            className={`upload-area ${dragOver ? 'drag-over' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+          <div
+            className={`upload-area ${fileUpload.isDragOver ? 'drag-over' : ''}`}
+            {...fileUpload.dragDropProps}
+            onClick={fileUpload.openFilePicker}
           >
             <div className="upload-content">
               <span className="upload-icon">📁</span>
@@ -401,9 +346,7 @@ Unicode characters: 🔒🔑💻🌟✨`
               </p>
             </div>
             <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileInputChange}
+              {...fileUpload.inputProps}
               style={{ display: 'none' }}
             />
           </div>
@@ -420,11 +363,7 @@ Unicode characters: 🔒🔑💻🌟✨`
             </div>
             <div className="info-item">
               <span className="info-label">Size:</span>
-              <span className="info-value">
-                {fileInfo.size < 1024 ? `${fileInfo.size} B` : 
-                 fileInfo.size < 1024 * 1024 ? `${(fileInfo.size / 1024).toFixed(1)} KB` : 
-                 `${(fileInfo.size / (1024 * 1024)).toFixed(1)} MB`}
-              </span>
+              <span className="info-value">{formatFileSize(fileInfo.size)}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Type:</span>

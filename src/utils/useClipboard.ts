@@ -27,7 +27,14 @@ export interface UseClipboardReturn {
    * @param customMessage - Optional custom success message for this specific copy
    */
   copy: (text: string, customMessage?: string) => Promise<void>
-  
+
+  /**
+   * Copy a data URL (e.g. image) to clipboard as an image blob
+   * @param dataUrl - Data URL to copy
+   * @param customMessage - Optional custom success message for this specific copy
+   */
+  copyImage: (dataUrl: string, customMessage?: string) => Promise<void>
+
   /**
    * Current feedback message (empty string when no feedback)
    */
@@ -97,6 +104,22 @@ export function useClipboard(options: UseClipboardOptions = {}): UseClipboardRet
     }
   }, [successMessage, errorMessage])
 
+  const copyImage = useCallback(async (dataUrl: string, customMessage?: string) => {
+    try {
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ])
+      setFeedback(customMessage || successMessage)
+      setIsSuccess(true)
+    } catch (error) {
+      console.error('Failed to copy image to clipboard:', error)
+      setFeedback(errorMessage)
+      setIsSuccess(false)
+    }
+  }, [successMessage, errorMessage])
+
   const clearFeedback = useCallback(() => {
     setFeedback('')
     setIsSuccess(false)
@@ -104,6 +127,7 @@ export function useClipboard(options: UseClipboardOptions = {}): UseClipboardRet
 
   return {
     copy,
+    copyImage,
     feedback,
     isSuccess,
     clearFeedback

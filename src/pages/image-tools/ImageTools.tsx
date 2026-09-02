@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useClipboard, useFileUpload, formatFileSize } from '../../utils'
 import './image-tools.css'
 
 type ToolMode = 'resize' | 'convert' | 'compress' | 'crop' | 'filter'
@@ -45,11 +46,11 @@ const ImageTools: React.FC = () => {
   const [mode, setMode] = useState<ToolMode>('resize')
   const [originalImage, setOriginalImage] = useState<ImageInfo | null>(null)
   const [processedImage, setProcessedImage] = useState<ImageInfo | null>(null)
-  const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [processing, setProcessing] = useState(false)
   const isMountedRef = useRef(true)
+
+  const { copyImage, feedback: copyFeedback } = useClipboard()
 
   // Tool options
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({
@@ -78,7 +79,6 @@ const ImageTools: React.FC = () => {
     intensity: 100
   })
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Supported formats
@@ -98,16 +98,6 @@ const ImageTools: React.FC = () => {
   // Handle file selection
   const handleFileSelect = useCallback((file: File) => {
     setError('')
-    
-    if (!supportedFormats.includes(file.type)) {
-      setError(`Unsupported file format: ${file.type}. Supported formats: JPEG, PNG, GIF, WebP, BMP`)
-      return
-    }
-
-    if (file.size > 50 * 1024 * 1024) { // 50MB limit
-      setError('File size too large. Maximum size is 50MB.')
-      return
-    }
 
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -155,36 +145,15 @@ const ImageTools: React.FC = () => {
       }
     }
     reader.readAsDataURL(file)
-  }, [supportedFormats])
-
-  // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
   }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
-
-  // File input change handler
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }, [handleFileSelect])
+  // File upload with drag-and-drop support and validation
+  const fileUpload = useFileUpload({
+    acceptedTypes: supportedFormats,
+    maxSize: 50 * 1024 * 1024, // 50MB limit
+    onFileSelect: handleFileSelect,
+    onError: (err) => setError(err)
+  })
 
   // Resize image
   const resizeImage = useCallback((image: ImageInfo, options: ResizeOptions): Promise<ImageInfo> => {
@@ -484,14 +453,6 @@ const ImageTools: React.FC = () => {
     }
   }, [originalImage, mode, resizeOptions, compressOptions, cropOptions, filterOptions, processImage])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -499,22 +460,10 @@ const ImageTools: React.FC = () => {
     }
   }, [])
 
-  // Copy to clipboard
+  // Copy image to clipboard
   const copyToClipboard = useCallback(async (dataUrl: string, label: string) => {
-    try {
-      // Convert data URL to blob
-      const response = await fetch(dataUrl)
-      const blob = await response.blob()
-      
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
-      ])
-      
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copyImage(dataUrl, `${label} copied to clipboard!`)
+  }, [copyImage])
 
   // Download image
   const downloadImage = useCallback((image: ImageInfo) => {
@@ -531,20 +480,8 @@ const ImageTools: React.FC = () => {
     setOriginalImage(null)
     setProcessedImage(null)
     setError('')
-    setCopyFeedback('')
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
-
-  // Format file size
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }, [])
+    fileUpload.clearFiles()
+  }, [fileUpload])
 
   return (
     <div className="image-tools">
@@ -622,11 +559,9 @@ const ImageTools: React.FC = () => {
       {!originalImage && (
         <div className="image-section upload-section">
           <div
-            className={`upload-area ${dragOver ? 'drag-over' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+            className={`upload-area ${fileUpload.isDragOver ? 'drag-over' : ''}`}
+            {...fileUpload.dragDropProps}
+            onClick={fileUpload.openFilePicker}
           >
             <div className="upload-content">
               <span className="upload-icon">🖼️</span>
@@ -641,10 +576,7 @@ const ImageTools: React.FC = () => {
               </p>
             </div>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileInputChange}
+              {...fileUpload.inputProps}
               style={{ display: 'none' }}
             />
           </div>
