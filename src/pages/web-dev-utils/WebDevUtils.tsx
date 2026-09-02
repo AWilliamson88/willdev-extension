@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './web-dev-utils.css'
 
 type UtilityMode = 'css' | 'meta' | 'entities' | 'favicon'
@@ -100,8 +101,9 @@ const WebDevUtils: React.FC = () => {
   const [entityInput, setEntityInput] = useState('')
   const [entityOutput, setEntityOutput] = useState('')
   const [entityMode, setEntityMode] = useState<'encode' | 'decode'>('encode')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Common HTML entities
   const commonEntities: HtmlEntity[] = [
@@ -327,23 +329,10 @@ align-items: ${gridAlign};`
     }
   }, [entityInput, entityMode, processEntities])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Clear all data
   const clearAll = useCallback(() => {

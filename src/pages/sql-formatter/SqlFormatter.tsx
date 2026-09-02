@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './sql-formatter.css'
 
 type FormatMode = 'format' | 'minify' | 'validate'
@@ -19,9 +20,10 @@ const SqlFormatter: React.FC = () => {
   const [indentSize, setIndentSize] = useState(2)
   const [uppercaseKeywords, setUppercaseKeywords] = useState(true)
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
   const [stats, setStats] = useState<SqlStats | null>(null)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // SQL Keywords for highlighting and validation
   const sqlKeywords = [
@@ -283,23 +285,14 @@ const SqlFormatter: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputSql.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputSql)
-      setCopyFeedback('SQL copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputSql])
+    await copy(outputSql, 'SQL copied to clipboard!')
+  }, [outputSql, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputSql('')
     setOutputSql('')
     setError('')
-    setCopyFeedback('')
     setStats(null)
   }, [])
 

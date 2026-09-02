@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './developer-utilities.css'
 
 type UtilityMode = 'timestamp' | 'lorem' | 'password' | 'uuid' | 'random'
@@ -22,7 +23,8 @@ interface PasswordOptions {
 
 const DeveloperUtilities: React.FC = () => {
   const [mode, setMode] = useState<UtilityMode>('timestamp')
-  const [copyFeedback, setCopyFeedback] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Timestamp Converter State
   const [timestampInput, setTimestampInput] = useState('')
@@ -288,23 +290,10 @@ const DeveloperUtilities: React.FC = () => {
     generateLorem()
   }, [generateLorem])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Load current timestamp
   const loadCurrentTimestamp = useCallback(() => {
@@ -320,7 +309,6 @@ const DeveloperUtilities: React.FC = () => {
     setGeneratedPasswords([])
     setGeneratedUuids([])
     setRandomData([])
-    setCopyFeedback('')
   }, [])
 
   return (

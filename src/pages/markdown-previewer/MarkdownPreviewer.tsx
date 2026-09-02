@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './markdown-previewer.css'
 
 interface MarkdownStats {
@@ -14,7 +15,8 @@ interface MarkdownStats {
 const MarkdownPreviewer: React.FC = () => {
   const [markdownText, setMarkdownText] = useState('')
   const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split')
-  const [copyFeedback, setCopyFeedback] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
   const [stats, setStats] = useState<MarkdownStats | null>(null)
 
   // Simple markdown to HTML converter
@@ -128,15 +130,8 @@ const MarkdownPreviewer: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Export as HTML
   const exportAsHtml = useCallback(() => {
@@ -249,7 +244,6 @@ This markdown previewer supports most common markdown features and provides a cl
   // Clear all content
   const clearAll = useCallback(() => {
     setMarkdownText('')
-    setCopyFeedback('')
   }, [])
 
   return (

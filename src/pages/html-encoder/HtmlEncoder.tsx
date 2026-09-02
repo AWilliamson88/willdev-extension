@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './html-encoder.css'
 
 type ConversionMode = 'encode' | 'decode'
@@ -8,7 +9,8 @@ const HtmlEncoder: React.FC = () => {
   const [outputText, setOutputText] = useState('')
   const [mode, setMode] = useState<ConversionMode>('encode')
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // HTML entity mappings for encoding
   const htmlEntities: Record<string, string> = {
@@ -100,22 +102,13 @@ const HtmlEncoder: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputText.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputText)
-      setCopyFeedback('Copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputText])
+    await copy(outputText)
+  }, [outputText, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputText('')
     setOutputText('')
-    setCopyFeedback('')
   }, [])
 
   // Swap input and output

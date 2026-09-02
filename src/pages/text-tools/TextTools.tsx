@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './text-tools.css'
 
 type ToolMode = 'case' | 'escape' | 'encode' | 'transform'
@@ -18,8 +19,9 @@ const TextTools: React.FC = () => {
   const [mode, setMode] = useState<ToolMode>('case')
   const [selectedTool, setSelectedTool] = useState('uppercase')
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [stats, setStats] = useState<TextStats | null>(null)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Case conversion tools
   const caseTools = {
@@ -248,22 +250,13 @@ const TextTools: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputText.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputText)
-      setCopyFeedback('Text copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputText])
+    await copy(outputText, 'Text copied to clipboard!')
+  }, [outputText, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputText('')
     setOutputText('')
-    setCopyFeedback('')
     setStats(null)
   }, [])
 

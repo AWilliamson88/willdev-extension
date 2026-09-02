@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './xml-formatter.css'
 
 type FormatMode = 'format' | 'minify' | 'validate'
@@ -19,10 +20,11 @@ const XmlFormatter: React.FC = () => {
   const [indentSize, setIndentSize] = useState(2)
   const [sortAttributes, setSortAttributes] = useState(false)
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
   const [isValid, setIsValid] = useState<boolean | null>(null)
   const [stats, setStats] = useState<XmlStats | null>(null)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Format XML with proper indentation
   const formatXml = useCallback((xmlString: string, indent: number, sortAttrs: boolean): string => {
@@ -350,23 +352,14 @@ const XmlFormatter: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputXml.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputXml)
-      setCopyFeedback('XML copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputXml])
+    await copy(outputXml, 'XML copied to clipboard!')
+  }, [outputXml, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputXml('')
     setOutputXml('')
     setError('')
-    setCopyFeedback('')
     setIsValid(null)
     setStats(null)
   }, [])

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './regex-tester.css'
 
 interface RegexMatch {
@@ -39,8 +40,9 @@ const RegexTester: React.FC = () => {
   const [matches, setMatches] = useState<RegexMatch[]>([])
   const [replacedText, setReplacedText] = useState('')
   const [error, setError] = useState('')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [highlightedText, setHighlightedText] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Common regex patterns
   const commonPatterns: CommonPattern[] = [
@@ -234,15 +236,8 @@ const RegexTester: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Load sample data
   const loadSample = useCallback(() => {
@@ -269,7 +264,6 @@ Invalid emails: notanemail, @invalid.com, test@`)
     setMatches([])
     setReplacedText('')
     setError('')
-    setCopyFeedback('')
     setHighlightedText('')
     setFlags({
       global: true,

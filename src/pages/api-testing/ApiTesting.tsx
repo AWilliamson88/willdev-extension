@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { useClipboard, formatFileSize } from '../../utils'
 import './api-testing.css'
 
 type TestingMode = 'client' | 'webhook' | 'docs'
@@ -83,8 +84,9 @@ const ApiTesting: React.FC = () => {
   const [response, setResponse] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const isMountedRef = useRef(true)
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Webhook testing state
   const [webhookUrl, setWebhookUrl] = useState('')
@@ -367,14 +369,6 @@ const ApiTesting: React.FC = () => {
     }
   }, [request, buildRequestUrl, buildRequestHeaders, buildRequestBody])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -384,13 +378,8 @@ const ApiTesting: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Format JSON
   const formatJson = useCallback((jsonString: string): string => {
@@ -444,15 +433,6 @@ const ApiTesting: React.FC = () => {
     })
     setResponse(null)
     setError('')
-  }, [])
-
-  // Format file size
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }, [])
 
   // Get mode description

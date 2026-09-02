@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './qr-generator.css'
 
 type QRErrorLevel = 'L' | 'M' | 'Q' | 'H'
@@ -57,9 +58,10 @@ const QrGenerator: React.FC = () => {
     backgroundColor: '#ffffff'
   })
   const [qrDataUrl, setQrDataUrl] = useState('')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const { copy, copyImage, feedback: copyFeedback } = useClipboard()
 
   // Simple QR Code generation using a basic implementation
   // Note: This is a simplified version for demonstration
@@ -204,35 +206,15 @@ END:VCARD`
   // Copy QR code to clipboard
   const copyQR = useCallback(async () => {
     if (!qrDataUrl) return
-
-    try {
-      const response = await fetch(qrDataUrl)
-      const blob = await response.blob()
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ])
-      setCopyFeedback('QR code copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy QR code')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [qrDataUrl])
+    await copyImage(qrDataUrl, 'QR code copied to clipboard!')
+  }, [qrDataUrl, copyImage])
 
   // Copy content to clipboard
   const copyContent = useCallback(async () => {
     const content = getQRContent()
     if (!content.trim()) return
-
-    try {
-      await navigator.clipboard.writeText(content)
-      setCopyFeedback('Content copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy content')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [getQRContent])
+    await copy(content, 'Content copied to clipboard!')
+  }, [getQRContent, copy])
 
   // Load sample data
   const loadSample = useCallback(() => {
@@ -296,7 +278,6 @@ END:VCARD`
     })
     setQrDataUrl('')
     setError('')
-    setCopyFeedback('')
   }, [])
 
   return (

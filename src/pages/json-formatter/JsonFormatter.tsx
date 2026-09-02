@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './json-formatter.css'
 
 type FormatMode = 'format' | 'minify' | 'validate'
@@ -19,8 +20,9 @@ const JsonFormatter: React.FC = () => {
   const [indentSize, setIndentSize] = useState(2)
   const [sortKeys, setSortKeys] = useState(false)
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
   const [isValid, setIsValid] = useState<boolean | null>(null)
   const [stats, setStats] = useState<JsonStats | null>(null)
 
@@ -176,23 +178,14 @@ const JsonFormatter: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputJson.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputJson)
-      setCopyFeedback('JSON copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputJson])
+    await copy(outputJson, 'JSON copied to clipboard!')
+  }, [outputJson, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputJson('')
     setOutputJson('')
     setError('')
-    setCopyFeedback('')
     setIsValid(null)
     setStats(null)
   }, [])

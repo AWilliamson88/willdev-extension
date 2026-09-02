@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard, formatFileSize } from '../../utils'
 import './data-converter.css'
 
 type ConversionMode = 'csv-json' | 'json-csv' | 'xml-json' | 'json-xml' | 'yaml-json' | 'json-yaml' | 'tsv-json' | 'json-tsv'
@@ -16,8 +17,9 @@ const DataConverter: React.FC = () => {
   const [inputData, setInputData] = useState('')
   const [outputData, setOutputData] = useState('')
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
   const [stats, setStats] = useState<ConversionStats | null>(null)
 
   // CSV parsing options
@@ -488,14 +490,6 @@ const DataConverter: React.FC = () => {
     }
   }, [inputData, mode, csvOptions, jsonOptions, realTimeEnabled, convertData])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Manual conversion
   const handleConvert = useCallback(() => {
     try {
@@ -510,13 +504,8 @@ const DataConverter: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Load sample data
   const loadSample = useCallback(() => {
@@ -539,17 +528,7 @@ const DataConverter: React.FC = () => {
     setInputData('')
     setOutputData('')
     setError('')
-    setCopyFeedback('')
     setStats(null)
-  }, [])
-
-  // Format file size
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }, [])
 
   // Get conversion description

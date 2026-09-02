@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { useClipboard } from '../../utils'
 import './guid-generator.css'
 
 interface GuidOptions {
@@ -14,7 +15,7 @@ const GuidGenerator: React.FC = () => {
     uppercase: false,
     quantity: 1
   })
-  const [copyFeedback, setCopyFeedback] = useState<string>('')
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Generate a single UUID v4
   const generateUUID = useCallback((): string => {
@@ -51,40 +52,23 @@ const GuidGenerator: React.FC = () => {
     }
     
     setGuids(newGuids)
-    setCopyFeedback('')
   }, [generateUUID, formatGuid, options.quantity])
 
   // Copy single GUID to clipboard
   const copyGuid = useCallback(async (guid: string) => {
-    try {
-      await navigator.clipboard.writeText(guid)
-      setCopyFeedback(`Copied: ${guid}`)
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [])
+    await copy(guid, `Copied: ${guid}`)
+  }, [copy])
 
   // Copy all GUIDs to clipboard
   const copyAllGuids = useCallback(async () => {
     if (guids.length === 0) return
-    
-    try {
-      const allGuids = guids.join('\n')
-      await navigator.clipboard.writeText(allGuids)
-      setCopyFeedback(`Copied ${guids.length} GUIDs to clipboard`)
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [guids])
+    const allGuids = guids.join('\n')
+    await copy(allGuids, `Copied ${guids.length} GUIDs to clipboard`)
+  }, [guids, copy])
 
   // Clear all generated GUIDs
   const clearGuids = useCallback(() => {
     setGuids([])
-    setCopyFeedback('')
   }, [])
 
   // Handle quantity change

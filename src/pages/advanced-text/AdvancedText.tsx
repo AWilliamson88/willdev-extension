@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './advanced-text.css'
 
 type ProcessingMode = 'analysis' | 'diff' | 'bulk' | 'pipeline'
@@ -74,8 +75,9 @@ const AdvancedText: React.FC = () => {
   const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([])
   const [pipelineResult, setPipelineResult] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Available pipeline operations
   const pipelineOperations = [
@@ -397,15 +399,8 @@ const AdvancedText: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Clear all data
   const clearAll = useCallback(() => {

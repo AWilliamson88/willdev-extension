@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { useClipboard } from '../../utils'
 import './encoding-utilities.css'
 
 type EncodingMode = 'hex' | 'binary' | 'ascii' | 'unicode' | 'morse'
@@ -16,8 +17,9 @@ const EncodingUtilities: React.FC = () => {
   const [inputText, setInputText] = useState('')
   const [outputText, setOutputText] = useState('')
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Morse code mapping
   const morseCode: Record<string, string> = {
@@ -248,14 +250,6 @@ const EncodingUtilities: React.FC = () => {
     }
   }, [inputText, mode, direction, realTimeEnabled, convertText])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Manual conversion
   const handleConvert = useCallback(() => {
     try {
@@ -279,13 +273,8 @@ const EncodingUtilities: React.FC = () => {
 
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyFeedback(`${label} copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(text, `${label} copied to clipboard!`)
+  }, [copy])
 
   // Load sample data
   const loadSample = useCallback(() => {
@@ -306,7 +295,6 @@ const EncodingUtilities: React.FC = () => {
     setInputText('')
     setOutputText('')
     setError('')
-    setCopyFeedback('')
   }, [])
 
   // Calculate encoding statistics

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './base64-text.css'
 
 type ConversionMode = 'encode' | 'decode'
@@ -8,7 +9,8 @@ const Base64Text: React.FC = () => {
   const [outputText, setOutputText] = useState('')
   const [mode, setMode] = useState<ConversionMode>('encode')
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
-  const [copyFeedback, setCopyFeedback] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
 
   // Encode text to Base64
   const encodeBase64 = useCallback((text: string): string => {
@@ -66,22 +68,13 @@ const Base64Text: React.FC = () => {
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputText.trim()) return
-    
-    try {
-      await navigator.clipboard.writeText(outputText)
-      setCopyFeedback('Copied to clipboard!')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-      setTimeout(() => setCopyFeedback(''), 2000)
-    }
-  }, [outputText])
+    await copy(outputText)
+  }, [outputText, copy])
 
   // Clear all text
   const clearAll = useCallback(() => {
     setInputText('')
     setOutputText('')
-    setCopyFeedback('')
   }, [])
 
   // Calculate Base64 size info

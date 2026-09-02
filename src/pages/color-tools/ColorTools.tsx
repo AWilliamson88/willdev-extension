@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { useClipboard } from '../../utils'
 import './color-tools.css'
 
 type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'hsv' | 'cmyk'
@@ -26,8 +27,9 @@ const ColorTools: React.FC = () => {
   })
   const [inputFormat, setInputFormat] = useState<ColorFormat>('hex')
   const [inputValue, setInputValue] = useState('#3498db')
-  const [copyFeedback, setCopyFeedback] = useState('')
   const [error, setError] = useState('')
+
+  const { copy, feedback: copyFeedback } = useClipboard()
   const [palette, setPalette] = useState<PaletteColor[]>([])
   const [paletteType, setPaletteType] = useState<'complementary' | 'triadic' | 'analogous' | 'monochromatic'>('complementary')
 
@@ -281,34 +283,16 @@ const ColorTools: React.FC = () => {
     setPalette(newPalette)
   }, [currentColor, paletteType, generatePalette])
 
-  // Handle copy feedback timeout with cleanup
-  useEffect(() => {
-    if (copyFeedback) {
-      const timeoutId = setTimeout(() => setCopyFeedback(''), 2000)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [copyFeedback])
-
   // Copy color value to clipboard
   const copyColor = useCallback(async (value: string, format: string) => {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopyFeedback(`${format} color copied to clipboard!`)
-    } catch (err) {
-      setCopyFeedback('Failed to copy to clipboard')
-    }
-  }, [])
+    await copy(value, `${format} color copied to clipboard!`)
+  }, [copy])
 
   // Copy palette colors
   const copyPalette = useCallback(async () => {
     const paletteText = palette.map(color => `${color.name}: ${color.hex}`).join('\n')
-    try {
-      await navigator.clipboard.writeText(paletteText)
-      setCopyFeedback('Palette copied to clipboard!')
-    } catch (err) {
-      setCopyFeedback('Failed to copy palette')
-    }
-  }, [palette])
+    await copy(paletteText, 'Palette copied to clipboard!')
+  }, [palette, copy])
 
   // Load random color
   const loadRandomColor = useCallback(() => {
