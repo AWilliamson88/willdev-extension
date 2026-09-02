@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { isValidJWT } from '../../utils'
 import './jwt-decoder.css'
 
 interface DecodedJWT {
@@ -19,20 +20,13 @@ const JwtDecoder: React.FC = () => {
     }
 
     try {
-      // Validate JWT format (must have 3 parts separated by dots)
-      const parts = token.trim().split('.')
-      if (parts.length !== 3) {
-        setDecoded({ error: 'Invalid JWT format. JWT must have 3 parts (header.payload.signature)' })
+      // Validate JWT format (must have 3 non-empty parts separated by dots)
+      if (!isValidJWT(token)) {
+        setDecoded({ error: 'Invalid JWT format. JWT must have 3 non-empty parts (header.payload.signature)' })
         return
       }
 
-      const [headerPart, payloadPart] = parts
-
-      // Validate parts are not empty
-      if (!headerPart || !payloadPart) {
-        setDecoded({ error: 'Invalid JWT. Header or payload is empty' })
-        return
-      }
+      const [headerPart, payloadPart] = token.trim().split('.')
 
       // Decode header
       const decodedHeader = decodeBase64Url(headerPart)

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { useClipboard, formatFileSize } from '../../utils'
+import { useClipboard, formatFileSize, isValidURL } from '../../utils'
 import './api-testing.css'
 
 type TestingMode = 'client' | 'webhook' | 'docs'
@@ -297,7 +297,7 @@ const ApiTesting: React.FC = () => {
 
   // Send HTTP request
   const sendRequest = useCallback(async () => {
-    if (!request.url.trim()) {
+    if (!request.url.trim() || !isValidURL(request.url.trim())) {
       setError('Please enter a valid URL')
       return
     }
