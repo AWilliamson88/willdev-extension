@@ -209,8 +209,8 @@ const ApiTesting: React.FC = () => {
   const updateFormField = useCallback((id: string, field: keyof FormField, value: string | boolean) => {
     setRequest(prev => ({
       ...prev,
-      formFields: prev.formFields.map(field =>
-        field.id === id ? { ...field, [field]: value } : field
+      formFields: prev.formFields.map(formField =>
+        formField.id === id ? { ...formField, [field]: value } : formField
       )
     }))
   }, [])
