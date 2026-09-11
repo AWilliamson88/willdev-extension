@@ -59,7 +59,7 @@ const DeveloperUtilities: React.FC = () => {
   const [randomData, setRandomData] = useState<string[]>([])
 
   // Lorem Ipsum words
-  const loremWords = [
+  const loremWords = useMemo(() => [
     'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do',
     'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua', 'enim',
     'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation', 'ullamco', 'laboris', 'nisi',
@@ -71,16 +71,16 @@ const DeveloperUtilities: React.FC = () => {
     'inventore', 'veritatis', 'et', 'quasi', 'architecto', 'beatae', 'vitae', 'dicta', 'sunt',
     'explicabo', 'nemo', 'ipsam', 'voluptatem', 'quia', 'voluptas', 'aspernatur', 'aut', 'odit',
     'fugit', 'sed', 'quia', 'consequuntur', 'magni', 'dolores', 'ratione', 'sequi', 'nesciunt'
-  ]
+  ], [])
 
   // Sample names for random data
-  const sampleNames = [
+  const sampleNames = useMemo(() => [
     'John Smith', 'Jane Doe', 'Michael Johnson', 'Sarah Wilson', 'David Brown', 'Emily Davis',
     'Christopher Miller', 'Jessica Garcia', 'Matthew Rodriguez', 'Ashley Martinez', 'Daniel Anderson',
     'Amanda Taylor', 'James Thomas', 'Jennifer Hernandez', 'Robert Moore', 'Elizabeth Martin',
     'William Jackson', 'Stephanie Thompson', 'Joseph White', 'Melissa Lopez', 'Charles Lee',
     'Nicole Gonzalez', 'Thomas Harris', 'Kimberly Clark', 'Christopher Lewis', 'Donna Robinson'
-  ]
+  ], [])
 
   // Convert timestamp
   const convertTimestamp = useCallback((input: string) => {
