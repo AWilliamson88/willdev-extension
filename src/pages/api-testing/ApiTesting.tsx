@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { useClipboard, formatFileSize, isValidURL } from '../../utils'
 import './api-testing.css'
 
-type TestingMode = 'client' | 'webhook' | 'docs'
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
 type BodyType = 'none' | 'json' | 'form' | 'text' | 'xml'
 type AuthType = 'none' | 'bearer' | 'basic' | 'apikey'
@@ -54,18 +53,7 @@ interface ApiResponse {
   timestamp: Date
 }
 
-interface WebhookEvent {
-  id: string
-  timestamp: Date
-  method: string
-  url: string
-  headers: Record<string, string>
-  body: string
-  queryParams: Record<string, string>
-}
-
 const ApiTesting: React.FC = () => {
-  const [mode, setMode] = useState<TestingMode>('client')
   const [request, setRequest] = useState<ApiRequest>({
     method: 'GET',
     url: '',
@@ -87,15 +75,6 @@ const ApiTesting: React.FC = () => {
   const isMountedRef = useRef(true)
 
   const { copy, feedback: copyFeedback } = useClipboard()
-
-  // Webhook testing state
-  const [webhookUrl, setWebhookUrl] = useState('')
-  const [webhookEvents, setWebhookEvents] = useState<WebhookEvent[]>([])
-  const [webhookListening, setWebhookListening] = useState(false)
-
-  // API documentation state
-  const [apiDocUrl, setApiDocUrl] = useState('')
-  const [apiDocContent, setApiDocContent] = useState('')
 
   const requestIdCounter = useRef(0)
 
@@ -435,55 +414,19 @@ const ApiTesting: React.FC = () => {
     setError('')
   }, [])
 
-  // Get mode description
-  const getModeDescription = useCallback((currentMode: TestingMode): string => {
-    const descriptions = {
-      client: 'Send HTTP requests to test APIs with full control over headers, authentication, and request body',
-      webhook: 'Test webhook endpoints by capturing and inspecting incoming HTTP requests',
-      docs: 'Generate and view API documentation from OpenAPI/Swagger specifications'
-    }
-    return descriptions[currentMode]
-  }, [])
-
   return (
     <div className="api-testing">
       <h2>API Testing Tools</h2>
 
       <div className="testing-section controls-section">
-        <div className="mode-group">
-          <label className="mode-label">Testing Mode:</label>
-          <div className="mode-buttons">
-            <button 
-              className={`mode-button ${mode === 'client' ? 'active' : ''}`}
-              onClick={() => setMode('client')}
-            >
-              🌐 HTTP Client
-            </button>
-            <button 
-              className={`mode-button ${mode === 'webhook' ? 'active' : ''}`}
-              onClick={() => setMode('webhook')}
-            >
-              🔗 Webhook Tester
-            </button>
-            <button 
-              className={`mode-button ${mode === 'docs' ? 'active' : ''}`}
-              onClick={() => setMode('docs')}
-            >
-              📚 API Docs
-            </button>
-          </div>
+        <div className="action-buttons">
+          <button className="sample-button" onClick={loadSampleRequest}>
+            📄 Load Sample
+          </button>
+          <button className="clear-button" onClick={clearRequest}>
+            🗑️ Clear All
+          </button>
         </div>
-
-        {mode === 'client' && (
-          <div className="action-buttons">
-            <button className="sample-button" onClick={loadSampleRequest}>
-              📄 Load Sample
-            </button>
-            <button className="clear-button" onClick={clearRequest}>
-              🗑️ Clear All
-            </button>
-          </div>
-        )}
       </div>
 
       {copyFeedback && (
@@ -500,12 +443,10 @@ const ApiTesting: React.FC = () => {
 
       <div className="testing-section description-section">
         <label className="section-label">About This Tool</label>
-        <p className="tool-description">{getModeDescription(mode)}</p>
+        <p className="tool-description">Send HTTP requests to test APIs with full control over headers, authentication, and request body</p>
       </div>
 
-      {mode === 'client' && (
-        <>
-          <div className="testing-section request-section">
+      <div className="testing-section request-section">
             <label className="section-label">HTTP Request</label>
 
             <div className="request-line">
@@ -725,9 +666,13 @@ const ApiTesting: React.FC = () => {
             )}
           </div>
 
-          {['POST', 'PUT', 'PATCH'].includes(request.method) && (
-            <div className="testing-section body-section">
+          <div className="testing-section body-section">
               <label className="section-label">Request Body</label>
+              {!['POST', 'PUT', 'PATCH'].includes(request.method) && (
+                <p className="body-method-hint">
+                  Note: {request.method} requests are sent without a body; this content will be ignored unless you switch to POST, PUT, or PATCH.
+                </p>
+              )}
 
               <div className="body-type-selector">
                 <label className="body-option">
@@ -827,8 +772,7 @@ const ApiTesting: React.FC = () => {
                   rows={8}
                 />
               )}
-            </div>
-          )}
+          </div>
 
           {response && (
             <div className="testing-section response-section">
@@ -893,51 +837,15 @@ const ApiTesting: React.FC = () => {
               </div>
             </div>
           )}
-        </>
-      )}
-
-      {mode === 'webhook' && (
-        <div className="testing-section webhook-section">
-          <label className="section-label">Webhook Testing</label>
-          <div className="webhook-content">
-            <p>Webhook testing functionality will be implemented here.</p>
-            <p>This would typically involve setting up a temporary webhook endpoint to capture incoming requests.</p>
-          </div>
-        </div>
-      )}
-
-      {mode === 'docs' && (
-        <div className="testing-section docs-section">
-          <label className="section-label">API Documentation</label>
-          <div className="docs-content">
-            <p>API documentation viewer functionality will be implemented here.</p>
-            <p>This would support OpenAPI/Swagger specification parsing and rendering.</p>
-          </div>
-        </div>
-      )}
 
       <div className="testing-section tips-section">
         <label className="section-label">Tips & Information</label>
         <div className="tips-content">
-          {mode === 'client' && (
-            <div className="tip-text">
-              <p><strong>CORS:</strong> Browser security may block requests to some APIs. Use a CORS proxy or browser extension if needed.</p>
-              <p><strong>Authentication:</strong> Never expose sensitive API keys in client-side code in production.</p>
-              <p><strong>Testing:</strong> Use the sample request to test with a public API endpoint.</p>
-            </div>
-          )}
-          {mode === 'webhook' && (
-            <div className="tip-text">
-              <p><strong>Webhook Testing:</strong> Capture and inspect incoming webhook requests in real-time.</p>
-              <p><strong>Debugging:</strong> View request headers, body, and query parameters for webhook debugging.</p>
-            </div>
-          )}
-          {mode === 'docs' && (
-            <div className="tip-text">
-              <p><strong>API Documentation:</strong> Load and view OpenAPI/Swagger specifications.</p>
-              <p><strong>Interactive:</strong> Test API endpoints directly from the documentation.</p>
-            </div>
-          )}
+          <div className="tip-text">
+            <p><strong>CORS:</strong> Browser security may block requests to some APIs. Use a CORS proxy or browser extension if needed.</p>
+            <p><strong>Authentication:</strong> Never expose sensitive API keys in client-side code in production.</p>
+            <p><strong>Testing:</strong> Use the sample request to test with a public API endpoint.</p>
+          </div>
         </div>
       </div>
     </div>
