@@ -57,15 +57,6 @@ const UrlEncoder: React.FC = () => {
     setOutputText(convertText(inputText))
   }, [inputText, convertText])
 
-  // Toggle conversion mode
-  const toggleMode = useCallback(() => {
-    setMode(prev => prev === 'encode' ? 'decode' : 'encode')
-    // Swap input and output when toggling mode
-    const temp = inputText
-    setInputText(outputText)
-    setOutputText(temp)
-  }, [inputText, outputText])
-
   // Copy output to clipboard
   const copyOutput = useCallback(async () => {
     if (!outputText.trim()) return

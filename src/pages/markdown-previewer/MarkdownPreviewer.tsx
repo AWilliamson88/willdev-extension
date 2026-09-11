@@ -35,7 +35,7 @@ const MarkdownPreviewer: React.FC = () => {
     html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>')
 
     // Code blocks (triple backticks)
-    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (_match, lang, code) => {
       const language = lang ? ` class="language-${lang}"` : ''
       return `<pre><code${language}>${code.trim()}</code></pre>`
     })
@@ -74,7 +74,7 @@ const MarkdownPreviewer: React.FC = () => {
     })
 
     // Tables
-    html = html.replace(/\|(.+)\|/g, (match, content) => {
+    html = html.replace(/\|(.+)\|/g, (_match, content) => {
       const cells = content.split('|').map((cell: string) => cell.trim())
       const cellTags = cells.map((cell: string) => `<td>${cell}</td>`).join('')
       return `<tr>${cellTags}</tr>`

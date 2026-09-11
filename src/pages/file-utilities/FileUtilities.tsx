@@ -4,14 +4,6 @@ import './file-utilities.css'
 
 type UtilityMode = 'hash' | 'split' | 'metadata' | 'analyze'
 
-interface FileInfo {
-  name: string
-  size: number
-  type: string
-  lastModified: number
-  webkitRelativePath?: string
-}
-
 interface FileMetadata {
   name: string
   size: number

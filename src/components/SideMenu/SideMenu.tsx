@@ -1,5 +1,5 @@
 // src/components/SideMenu/SideMenu.tsx
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { SideMenuProps } from 'types'
