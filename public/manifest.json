@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "WillDev",
-    "version": "0.0.20",
+    "version": "0.0.21",
     "description": "A developer toolkit extension",
     "permissions": ["tabs"],
     "background": {

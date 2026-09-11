@@ -2,7 +2,7 @@
 
 A comprehensive developer toolkit browser extension with 24+ utilities for text processing, encoding, formatting, and web development.
 
-![Version](https://img.shields.io/badge/version-0.0.20-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.21-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🚀 Features
